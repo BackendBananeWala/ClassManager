@@ -28,10 +28,8 @@ const router = useRouter()
 
 const showAddClass = ref(false)
 const newTag = ref('')
-const importError = ref('')
-const fileInput = ref<HTMLInputElement | null>(null)
-const pendingJson = ref('')
-const showImportConfirm = ref(false)
+const importStatus = ref('')
+const importIsError = ref(false)
 
 function onNameChange(e: Event) {
   user.setName((e.target as HTMLInputElement).value)
@@ -61,57 +59,43 @@ function exportData() {
   }, 100)
 }
 
-function triggerFileInput() {
-  if (fileInput.value) {
-    fileInput.value.value = ''
-    fileInput.value.click()
-  }
-}
-
-function onFileSelect(e: Event) {
+function onImportFile(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
+  input.value = ''
   if (!file) return
-  importError.value = ''
+
+  importStatus.value = 'Reading file...'
+  importIsError.value = false
+
   const reader = new FileReader()
   reader.onload = () => {
-    const text = reader.result as string
     try {
+      const text = reader.result as string
       const parsed = JSON.parse(text)
       if (!parsed || parsed.version !== 1) {
-        importError.value = 'Invalid backup file format.'
+        importStatus.value = 'Invalid backup file. Missing version.'
+        importIsError.value = true
         return
       }
-      pendingJson.value = text
-      showImportConfirm.value = true
+      if (!confirm('This will replace all your current data. Continue?')) {
+        importStatus.value = ''
+        return
+      }
+      storage.importAll(text)
+      importStatus.value = 'Import successful! Reloading...'
+      importIsError.value = false
+      setTimeout(() => window.location.reload(), 300)
     } catch {
-      importError.value = 'Could not parse the file. Make sure it is a valid JSON export.'
+      importStatus.value = 'Could not parse the file. Make sure it is a valid JSON export.'
+      importIsError.value = true
     }
   }
   reader.onerror = () => {
-    importError.value = 'Could not read the file. Please try again.'
+    importStatus.value = 'Could not read the file. Please try again.'
+    importIsError.value = true
   }
   reader.readAsText(file)
-}
-
-function confirmImport() {
-  if (!pendingJson.value) return
-  try {
-    storage.importAll(pendingJson.value)
-    showImportConfirm.value = false
-    pendingJson.value = ''
-    setTimeout(() => window.location.reload(), 200)
-  } catch {
-    importError.value = 'Failed to import data.'
-    showImportConfirm.value = false
-    pendingJson.value = ''
-  }
-}
-
-function cancelImport() {
-  pendingJson.value = ''
-  showImportConfirm.value = false
-  if (fileInput.value) fileInput.value.value = ''
 }
 
 function clearAllData() {
@@ -206,30 +190,12 @@ function clearAllData() {
       <p class="info-text">Export your data as a JSON backup or import from a previous export.</p>
       <div class="data-actions">
         <button class="rx-btn rx-btn-primary rx-btn--sm" @click="exportData">Export Data</button>
-        <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="triggerFileInput">Import Data</button>
-        <input ref="fileInput" type="file" accept="application/json,.json,text/plain" style="display:none" @change="onFileSelect" />
+        <label class="rx-btn rx-btn-ghost rx-btn--sm import-label">
+          Import Data
+          <input type="file" accept="*/*" class="import-input" @change="onImportFile" />
+        </label>
       </div>
-      <p v-if="importError" class="rx-field-error" style="margin-top:0.5rem">{{ importError }}</p>
-
-      <AlertDialogRoot :open="showImportConfirm" @update:open="(v: boolean) => { if (!v) cancelImport() }">
-        <AlertDialogPortal>
-          <AlertDialogOverlay class="rx-alert-overlay" />
-          <AlertDialogContent class="rx-alert-content">
-            <AlertDialogTitle class="rx-alert-title">Import Data?</AlertDialogTitle>
-            <AlertDialogDescription class="rx-alert-desc">
-              This will replace all your current data with the contents of the selected file. This cannot be undone.
-            </AlertDialogDescription>
-            <div class="rx-alert-actions">
-              <AlertDialogCancel as-child>
-                <button class="rx-btn rx-btn-ghost" @click="cancelImport">Cancel</button>
-              </AlertDialogCancel>
-              <AlertDialogAction as-child>
-                <button class="rx-btn rx-btn-primary" @click="confirmImport">Yes, import</button>
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialogPortal>
-      </AlertDialogRoot>
+      <p v-if="importStatus" :class="importIsError ? 'rx-field-error' : 'import-success'" style="margin-top:0.5rem">{{ importStatus }}</p>
     </div>
 
     <Separator class="rx-separator" />
@@ -328,6 +294,11 @@ function clearAllData() {
 .rx-btn--sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
 
 .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.import-label { cursor: pointer; position: relative; overflow: hidden; }
+.import-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 100px; }
+
+.import-success { font-size: 0.8125rem; color: var(--color-text-muted); font-weight: 500; }
 
 .danger-card { border-color: #dc2626; }
 .danger-heading { color: #dc2626; }
