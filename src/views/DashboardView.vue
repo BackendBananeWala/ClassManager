@@ -105,6 +105,20 @@ const weeklyBreakdown = computed(() => {
 
 const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.count, 0))
 
+const monthlyBreakdown = computed(() => {
+  const m = monthly.value
+  return m.subjects
+    .map((name, si) => ({
+      name,
+      count: m.data[name].reduce((a: number, b: number) => a + b, 0),
+      color: COLORS[si % COLORS.length],
+    }))
+    .filter((d) => d.count > 0)
+    .sort((a, b) => b.count - a.count)
+})
+
+const monthlyBreakdownTotal = computed(() => monthlyBreakdown.value.reduce((s, b) => s + b.count, 0))
+
 const allSubjects = computed(() => store.getAllSubjectsEver())
 
 function subjectColor(name: string): string {
@@ -238,6 +252,23 @@ const monthStats = computed(() => {
     <div v-if="monthly.subjects.length > 0" class="rx-card chart-card">
       <h2 class="card-heading">{{ monthLabel }} — Distribution</h2>
       <Chart :key="'p-' + chartKey" :options="monthlyPieOptions" />
+    </div>
+
+    <!-- Monthly breakdown -->
+    <div v-if="monthlyBreakdown.length > 0" class="rx-card">
+      <h2 class="card-heading">{{ monthLabel }} — Breakdown</h2>
+      <div class="breakdown-list">
+        <div v-for="item in monthlyBreakdown" :key="'mb-' + item.name" class="breakdown-row">
+          <span class="breakdown-name">
+            <span class="legend-dot" :style="{ background: item.color }"></span>
+            {{ item.name }}
+          </span>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar" :style="{ width: monthlyBreakdownTotal > 0 ? (item.count / monthlyBreakdownTotal * 100) + '%' : '0%', background: item.color }" />
+          </div>
+          <span class="breakdown-count">{{ item.count }}</span>
+        </div>
+      </div>
     </div>
 
     <Separator class="rx-separator" />

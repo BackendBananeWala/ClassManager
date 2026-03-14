@@ -18,6 +18,7 @@ import { Label, Separator } from 'radix-vue'
 import { useUserStore } from '@/stores/user'
 import { useClassesStore } from '@/stores/classes'
 import { useThemeStore } from '@/stores/theme'
+import { storage } from '@/lib/storage'
 import AddClassModal from '@/components/AddClassModal.vue'
 
 const user = useUserStore()
@@ -27,6 +28,10 @@ const router = useRouter()
 
 const showAddClass = ref(false)
 const newTag = ref('')
+const importError = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
+const pendingFile = ref<File | null>(null)
+const showImportConfirm = ref(false)
 
 function onNameChange(e: Event) {
   user.setName((e.target as HTMLInputElement).value)
@@ -38,6 +43,46 @@ function addTag() {
     store.addQuickTag(tag)
     newTag.value = ''
   }
+}
+
+function exportData() {
+  const json = storage.exportAll()
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'classmanager-backup.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function onFileSelect(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  pendingFile.value = file
+  importError.value = ''
+  showImportConfirm.value = true
+}
+
+function confirmImport() {
+  if (!pendingFile.value) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    try {
+      storage.importAll(reader.result as string)
+      window.location.reload()
+    } catch {
+      importError.value = 'Invalid backup file. Please select a valid export.'
+      showImportConfirm.value = false
+    }
+  }
+  reader.readAsText(pendingFile.value)
+}
+
+function cancelImport() {
+  pendingFile.value = null
+  showImportConfirm.value = false
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 function clearAllData() {
@@ -124,6 +169,38 @@ function clearAllData() {
           <span class="storage-label">Classes</span>
         </div>
       </div>
+    </div>
+
+    <!-- Data Export/Import -->
+    <div class="rx-card">
+      <h2 class="card-heading">Data</h2>
+      <p class="info-text">Export your data as a JSON backup or import from a previous export.</p>
+      <div class="data-actions">
+        <button class="rx-btn rx-btn-primary rx-btn--sm" @click="exportData">Export Data</button>
+        <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="fileInput?.click()">Import Data</button>
+        <input ref="fileInput" type="file" accept=".json" style="display:none" @change="onFileSelect" />
+      </div>
+      <p v-if="importError" class="rx-field-error" style="margin-top:0.5rem">{{ importError }}</p>
+
+      <AlertDialogRoot :open="showImportConfirm" @update:open="(v: boolean) => { if (!v) cancelImport() }">
+        <AlertDialogPortal>
+          <AlertDialogOverlay class="rx-alert-overlay" />
+          <AlertDialogContent class="rx-alert-content">
+            <AlertDialogTitle class="rx-alert-title">Import Data?</AlertDialogTitle>
+            <AlertDialogDescription class="rx-alert-desc">
+              This will replace all your current data with the contents of the selected file. This cannot be undone.
+            </AlertDialogDescription>
+            <div class="rx-alert-actions">
+              <AlertDialogCancel as-child>
+                <button class="rx-btn rx-btn-ghost" @click="cancelImport">Cancel</button>
+              </AlertDialogCancel>
+              <AlertDialogAction as-child>
+                <button class="rx-btn rx-btn-primary" @click="confirmImport">Yes, import</button>
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialogPortal>
+      </AlertDialogRoot>
     </div>
 
     <Separator class="rx-separator" />
@@ -220,6 +297,8 @@ function clearAllData() {
 .add-tag-row .rx-input { flex: 1; }
 
 .rx-btn--sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+
+.data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .danger-card { border-color: #dc2626; }
 .danger-heading { color: #dc2626; }
