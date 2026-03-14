@@ -30,7 +30,7 @@ const showAddClass = ref(false)
 const newTag = ref('')
 const importError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
-const pendingFile = ref<File | null>(null)
+const pendingJson = ref('')
 const showImportConfirm = ref(false)
 
 function onNameChange(e: Event) {
@@ -72,35 +72,44 @@ function onFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
-  pendingFile.value = file
   importError.value = ''
-  showImportConfirm.value = true
-}
-
-function confirmImport() {
-  if (!pendingFile.value) return
   const reader = new FileReader()
   reader.onload = () => {
+    const text = reader.result as string
     try {
-      storage.importAll(reader.result as string)
-      showImportConfirm.value = false
-      setTimeout(() => window.location.reload(), 200)
+      const parsed = JSON.parse(text)
+      if (!parsed || parsed.version !== 1) {
+        importError.value = 'Invalid backup file format.'
+        return
+      }
+      pendingJson.value = text
+      showImportConfirm.value = true
     } catch {
-      importError.value = 'Invalid backup file. Please select a valid export.'
-      showImportConfirm.value = false
-      pendingFile.value = null
+      importError.value = 'Could not parse the file. Make sure it is a valid JSON export.'
     }
   }
   reader.onerror = () => {
     importError.value = 'Could not read the file. Please try again.'
-    showImportConfirm.value = false
-    pendingFile.value = null
   }
-  reader.readAsText(pendingFile.value)
+  reader.readAsText(file)
+}
+
+function confirmImport() {
+  if (!pendingJson.value) return
+  try {
+    storage.importAll(pendingJson.value)
+    showImportConfirm.value = false
+    pendingJson.value = ''
+    setTimeout(() => window.location.reload(), 200)
+  } catch {
+    importError.value = 'Failed to import data.'
+    showImportConfirm.value = false
+    pendingJson.value = ''
+  }
 }
 
 function cancelImport() {
-  pendingFile.value = null
+  pendingJson.value = ''
   showImportConfirm.value = false
   if (fileInput.value) fileInput.value.value = ''
 }
