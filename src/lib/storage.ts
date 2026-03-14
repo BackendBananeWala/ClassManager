@@ -41,11 +41,21 @@ export const storage = {
     if (!data || data.version !== 1) {
       throw new Error('Invalid backup file')
     }
+    const syncBackup = {
+      sync_enabled: storage.get('sync_enabled'),
+      sync_id: storage.get('sync_id'),
+      sync_last: storage.get('sync_last'),
+    }
     storage.clear()
-    const reserved = ['version', 'exportedAt']
+    const skip = ['version', 'exportedAt', 'syncedAt']
     for (const [key, value] of Object.entries(data)) {
-      if (reserved.includes(key)) continue
+      if (skip.includes(key)) continue
       storage.set(key, value)
+    }
+    if (syncBackup.sync_id) {
+      storage.set('sync_id', syncBackup.sync_id)
+      storage.set('sync_enabled', syncBackup.sync_enabled)
+      storage.set('sync_last', syncBackup.sync_last)
     }
   },
 }

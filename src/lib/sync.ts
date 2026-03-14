@@ -11,10 +11,23 @@ export async function pushData(syncId: string): Promise<void> {
   await set(dbRef(db, `users/${syncId}`), data)
 }
 
+function firebaseToArrays(obj: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...obj }
+  const arrayKeys = ['day_records', 'class_names', 'quick_tags']
+  for (const key of arrayKeys) {
+    const val = result[key]
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      result[key] = Object.values(val)
+    }
+  }
+  return result
+}
+
 export async function pullData(syncId: string): Promise<Record<string, unknown> | null> {
   const snapshot = await get(dbRef(db, `users/${syncId}`))
   if (!snapshot.exists()) return null
-  return snapshot.val() as Record<string, unknown>
+  const raw = snapshot.val() as Record<string, unknown>
+  return firebaseToArrays(raw)
 }
 
 export function debouncedPush(syncId: string, onDone?: () => void): void {
