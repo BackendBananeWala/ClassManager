@@ -118,7 +118,7 @@ const historySyncUrl = computed(() => {
       </section>
 
       <section v-if="store.quickTags.length > 0">
-        <h2 class="section-heading">Quick Tags</h2>
+        <h2 class="section-heading">Events</h2>
         <div class="chip-grid">
           <button
             v-for="tag in store.quickTags"
@@ -194,7 +194,7 @@ const historySyncUrl = computed(() => {
             </div>
           </div>
           <div v-if="historyRecord.tags.length > 0" class="history-group">
-            <span class="history-label">Tags</span>
+            <span class="history-label">Events</span>
             <div class="chip-grid chip-grid--sm">
               <span v-for="t in historyRecord.tags" :key="t" class="rx-chip rx-chip--tag rx-chip--active rx-chip--readonly">{{ t }}</span>
             </div>

@@ -76,10 +76,10 @@ function clearAllData() {
       </div>
     </div>
 
-    <!-- Quick Tags -->
+    <!-- Events -->
     <div class="rx-card">
-      <h2 class="card-heading">Quick Tags</h2>
-      <p class="info-text" style="margin-bottom:0.75rem">Tags like Holiday or Seminar that you can quickly mark on any day.</p>
+      <h2 class="card-heading">Events</h2>
+      <p class="info-text" style="margin-bottom:0.75rem">Events like Holiday or Seminar that you can quickly mark on any day.</p>
       <div v-if="store.quickTags.length > 0" class="tag-list" style="margin-bottom:0.75rem">
         <div v-for="tag in store.quickTags" :key="tag" class="tag-item">
           <span>{{ tag }}</span>

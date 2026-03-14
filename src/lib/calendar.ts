@@ -3,7 +3,7 @@ export function buildDaySyncUrl(date: string, classes: string[], tags: string[])
 
   const lines: string[] = []
   if (classes.length > 0) lines.push(`Classes: ${classes.join(', ')}`)
-  if (tags.length > 0) lines.push(`Tags: ${tags.join(', ')}`)
+  if (tags.length > 0) lines.push(`Events: ${tags.join(', ')}`)
   const description = lines.join('\n')
 
   const params = new URLSearchParams({
