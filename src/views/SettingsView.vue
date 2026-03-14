@@ -83,7 +83,8 @@ function confirmImport() {
   reader.onload = () => {
     try {
       storage.importAll(reader.result as string)
-      window.location.reload()
+      showImportConfirm.value = false
+      setTimeout(() => window.location.reload(), 200)
     } catch {
       importError.value = 'Invalid backup file. Please select a valid export.'
       showImportConfirm.value = false
