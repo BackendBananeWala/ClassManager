@@ -118,6 +118,40 @@ const allTimeBreakdown = computed(() => {
     .sort((a, b) => b.count - a.count)
 })
 
+const monthlyPieOptions = computed(() => {
+  const m = monthly.value
+  const pieData = m.subjects
+    .map((name, si) => ({
+      name,
+      y: m.data[name].reduce((a: number, b: number) => a + b, 0),
+      color: COLORS[si % COLORS.length],
+    }))
+    .filter((d) => d.y > 0)
+    .sort((a, b) => b.y - a.y)
+
+  return {
+    chart: { ...baseTheme(), type: 'pie', height: 300 },
+    title: { text: undefined },
+    tooltip: { pointFormat: '<b>{point.y}</b> classes ({point.percentage:.0f}%)', borderRadius: 8, borderWidth: 0, style: { fontSize: '12px' } },
+    plotOptions: {
+      pie: {
+        allowPointSelect: true,
+        cursor: 'pointer',
+        borderWidth: 0,
+        dataLabels: {
+          enabled: true,
+          format: '{point.name}',
+          style: { fontSize: '11px', fontWeight: '500', color: isDark.value ? '#ccc' : '#333', textOutline: 'none' },
+          distance: 15,
+        },
+        showInLegend: false,
+      },
+    },
+    series: [{ name: 'Classes', data: pieData }],
+    credits: { enabled: false },
+  }
+})
+
 const monthLabel = computed(() => {
   const d = new Date()
   return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
@@ -198,6 +232,12 @@ const monthStats = computed(() => {
           <strong>{{ monthStats.classes }}</strong> classes across <strong>{{ monthStats.days }}</strong> days this month.
         </p>
       </template>
+    </div>
+
+    <!-- Monthly pie chart -->
+    <div v-if="monthly.subjects.length > 0" class="rx-card chart-card">
+      <h2 class="card-heading">{{ monthLabel }} — Distribution</h2>
+      <Chart :key="'p-' + chartKey" :options="monthlyPieOptions" />
     </div>
 
     <Separator class="rx-separator" />
