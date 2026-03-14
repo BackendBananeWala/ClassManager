@@ -18,16 +18,20 @@ import { Label, Separator } from 'radix-vue'
 import { useUserStore } from '@/stores/user'
 import { useClassesStore } from '@/stores/classes'
 import { useThemeStore } from '@/stores/theme'
+import { useSyncStore } from '@/stores/sync'
 import { storage } from '@/lib/storage'
 import AddClassModal from '@/components/AddClassModal.vue'
 
 const user = useUserStore()
 const store = useClassesStore()
 const themeStore = useThemeStore()
+const sync = useSyncStore()
 const router = useRouter()
 
 const showAddClass = ref(false)
 const newTag = ref('')
+const pullSyncId = ref('')
+const showPullOptions = ref(false)
 const importStatus = ref('')
 const importIsError = ref(false)
 
@@ -184,6 +188,63 @@ function clearAllData() {
       </div>
     </div>
 
+    <!-- Cloud Sync -->
+    <div class="rx-card">
+      <h2 class="card-heading">Cloud Sync</h2>
+      <div class="theme-row" style="margin-bottom:0.75rem">
+        <div>
+          <Label class="rx-label" style="font-size:0.875rem; color:var(--color-text)">Auto Sync</Label>
+          <p class="info-text" style="margin-bottom:0">Sync data to cloud after every change</p>
+        </div>
+        <SwitchRoot
+          class="rx-switch"
+          :checked="sync.syncEnabled"
+          @update:checked="sync.syncEnabled ? sync.disableSync() : sync.enableSync()"
+        >
+          <SwitchThumb class="rx-switch-thumb" />
+        </SwitchRoot>
+      </div>
+
+      <template v-if="sync.syncEnabled && sync.syncId">
+        <div class="field" style="margin-bottom:0.75rem">
+          <Label class="rx-label">Your Sync ID (keep this safe)</Label>
+          <div class="sync-id-row">
+            <input type="text" class="rx-input" :value="sync.syncId" readonly />
+            <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="navigator.clipboard.writeText(sync.syncId)">Copy</button>
+          </div>
+        </div>
+        <p v-if="sync.lastSynced" class="info-text" style="margin-bottom:0.5rem">Last synced: {{ new Date(sync.lastSynced).toLocaleString() }}</p>
+      </template>
+
+      <Separator class="rx-separator" style="margin:0.75rem 0" />
+
+      <div class="field">
+        <Label class="rx-label">Enter Sync ID from another device</Label>
+        <div class="sync-id-row">
+          <input v-model="pullSyncId" type="text" class="rx-input" placeholder="Paste Sync ID" />
+          <button
+            class="rx-btn rx-btn-primary rx-btn--sm"
+            :disabled="!pullSyncId.trim() || sync.syncing"
+            @click="sync.setSyncId(pullSyncId.trim()); showPullOptions = true"
+          >
+            Pull
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showPullOptions" class="pull-options">
+        <p class="info-text" style="margin-bottom:0.5rem">How should pulled data be applied?</p>
+        <div class="data-actions">
+          <button class="rx-btn rx-btn-danger rx-btn--sm" :disabled="sync.syncing" @click="sync.triggerPull('replace'); showPullOptions = false">Replace Local</button>
+          <button class="rx-btn rx-btn-primary rx-btn--sm" :disabled="sync.syncing" @click="sync.triggerPull('merge'); showPullOptions = false">Merge</button>
+          <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="showPullOptions = false">Cancel</button>
+        </div>
+      </div>
+
+      <p v-if="sync.syncing" class="info-text" style="margin-top:0.5rem">Syncing...</p>
+      <p v-if="sync.error" class="rx-field-error" style="margin-top:0.5rem">{{ sync.error }}</p>
+    </div>
+
     <!-- Data Export/Import -->
     <div class="rx-card">
       <h2 class="card-heading">Data</h2>
@@ -293,6 +354,9 @@ function clearAllData() {
 
 .rx-btn--sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
 
+.sync-id-row { display: flex; gap: 0.5rem; }
+.sync-id-row .rx-input { flex: 1; }
+.pull-options { margin-top: 0.75rem; }
 .data-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .import-label { cursor: pointer; position: relative; overflow: hidden; }

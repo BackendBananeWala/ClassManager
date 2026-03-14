@@ -1,5 +1,5 @@
 const STORAGE_PREFIX = 'classmanager_'
-const KNOWN_KEYS = ['user_name', 'theme', 'day_records', 'class_names', 'quick_tags']
+const KNOWN_KEYS = ['user_name', 'theme', 'day_records', 'class_names', 'quick_tags', 'sync_enabled', 'sync_id', 'sync_last']
 
 export const storage = {
   get<T>(key: string): T | null {

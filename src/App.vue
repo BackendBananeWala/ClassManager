@@ -10,8 +10,14 @@ import {
   Separator,
 } from 'radix-vue'
 import { useThemeStore } from '@/stores/theme'
+import { useClassesStore } from '@/stores/classes'
+import { useSyncStore } from '@/stores/sync'
 
 useThemeStore()
+
+const classesStore = useClassesStore()
+const syncStore = useSyncStore()
+classesStore.onPersist(() => syncStore.triggerPush())
 
 const route = useRoute()
 const router = useRouter()

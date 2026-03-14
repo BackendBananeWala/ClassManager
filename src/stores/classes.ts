@@ -14,9 +14,12 @@ export const useClassesStore = defineStore('classes', () => {
   const savedNames = ref<string[]>(storage.get<string[]>(NAMES_KEY) ?? [])
   const quickTags = ref<string[]>(storage.get<string[]>(TAGS_KEY) ?? DEFAULT_TAGS)
 
-  function persistDays() { storage.set(DAYS_KEY, dayRecords.value) }
-  function persistNames() { storage.set(NAMES_KEY, savedNames.value) }
-  function persistTags() { storage.set(TAGS_KEY, quickTags.value) }
+  let _onPersist: (() => void) | null = null
+  function onPersist(cb: () => void) { _onPersist = cb }
+
+  function persistDays() { storage.set(DAYS_KEY, dayRecords.value); _onPersist?.() }
+  function persistNames() { storage.set(NAMES_KEY, savedNames.value); _onPersist?.() }
+  function persistTags() { storage.set(TAGS_KEY, quickTags.value); _onPersist?.() }
 
   function todayStr(): string {
     const d = new Date()
@@ -200,6 +203,7 @@ export const useClassesStore = defineStore('classes', () => {
   }
 
   return {
+    onPersist,
     dayRecords,
     savedNames,
     quickTags,
