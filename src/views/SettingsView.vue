@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   AlertDialogRoot,
@@ -17,19 +18,32 @@ import { Label, Separator } from 'radix-vue'
 import { useUserStore } from '@/stores/user'
 import { useClassesStore } from '@/stores/classes'
 import { useThemeStore } from '@/stores/theme'
+import AddClassModal from '@/components/AddClassModal.vue'
 
 const user = useUserStore()
-const classesStore = useClassesStore()
+const store = useClassesStore()
 const themeStore = useThemeStore()
 const router = useRouter()
+
+const showAddClass = ref(false)
+const newTag = ref('')
 
 function onNameChange(e: Event) {
   user.setName((e.target as HTMLInputElement).value)
 }
 
+function addTag() {
+  const tag = newTag.value.trim()
+  if (tag) {
+    store.addQuickTag(tag)
+    newTag.value = ''
+  }
+}
+
 function clearAllData() {
   user.reset()
-  classesStore.classes.splice(0)
+  store.dayRecords.splice(0)
+  store.savedNames.splice(0)
   router.replace({ name: 'welcome' })
 }
 </script>
@@ -38,6 +52,7 @@ function clearAllData() {
   <div class="settings">
     <h1 class="page-title">Settings</h1>
 
+    <!-- Profile -->
     <div class="rx-card">
       <h2 class="card-heading">Profile</h2>
       <div class="field">
@@ -46,6 +61,38 @@ function clearAllData() {
       </div>
     </div>
 
+    <!-- Manage Classes -->
+    <div class="rx-card">
+      <div class="card-header-row">
+        <h2 class="card-heading" style="margin-bottom:0">Classes</h2>
+        <button class="rx-btn rx-btn-primary rx-btn--sm" @click="showAddClass = true">+ Add</button>
+      </div>
+      <p v-if="store.savedNames.length === 0" class="info-text">No classes added yet. Tap "+ Add" to create your first class.</p>
+      <div v-else class="tag-list">
+        <div v-for="name in store.savedNames" :key="name" class="tag-item">
+          <span>{{ name }}</span>
+          <button class="tag-remove" @click="store.removeClassName(name)">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Tags -->
+    <div class="rx-card">
+      <h2 class="card-heading">Quick Tags</h2>
+      <p class="info-text" style="margin-bottom:0.75rem">Tags like Holiday or Seminar that you can quickly mark on any day.</p>
+      <div v-if="store.quickTags.length > 0" class="tag-list" style="margin-bottom:0.75rem">
+        <div v-for="tag in store.quickTags" :key="tag" class="tag-item">
+          <span>{{ tag }}</span>
+          <button class="tag-remove" @click="store.removeQuickTag(tag)">&times;</button>
+        </div>
+      </div>
+      <form class="add-tag-row" @submit.prevent="addTag">
+        <input v-model="newTag" type="text" class="rx-input" placeholder="New tag name" />
+        <button type="submit" class="rx-btn rx-btn-primary rx-btn--sm" :disabled="!newTag.trim()">Add</button>
+      </form>
+    </div>
+
+    <!-- Appearance -->
     <div class="rx-card">
       <h2 class="card-heading">Appearance</h2>
       <div class="theme-row">
@@ -63,23 +110,28 @@ function clearAllData() {
       </div>
     </div>
 
+    <!-- Storage -->
     <div class="rx-card">
       <h2 class="card-heading">Storage</h2>
       <p class="info-text">All data is stored locally on your device. Nothing is sent to any server.</p>
       <div class="storage-row">
         <div class="storage-stat">
-          <span class="storage-value">{{ classesStore.totalClasses }}</span>
-          <span class="storage-label">Classes stored</span>
+          <span class="storage-value">{{ store.totalDaysRecorded }}</span>
+          <span class="storage-label">Days recorded</span>
+        </div>
+        <div class="storage-stat">
+          <span class="storage-value">{{ store.savedNames.length }}</span>
+          <span class="storage-label">Classes</span>
         </div>
       </div>
     </div>
 
     <Separator class="rx-separator" />
 
+    <!-- Danger Zone -->
     <div class="rx-card danger-card">
       <h2 class="card-heading danger-heading">Danger Zone</h2>
       <p class="info-text">This will permanently delete all your data and reset the app.</p>
-
       <AlertDialogRoot>
         <AlertDialogTrigger as-child>
           <button class="rx-btn rx-btn-danger">Clear All Data</button>
@@ -89,7 +141,7 @@ function clearAllData() {
           <AlertDialogContent class="rx-alert-content">
             <AlertDialogTitle class="rx-alert-title">Are you sure?</AlertDialogTitle>
             <AlertDialogDescription class="rx-alert-desc">
-              This will permanently delete all your classes and reset your profile. This action cannot be undone.
+              This will permanently delete all your classes, attendance records, and reset your profile. This action cannot be undone.
             </AlertDialogDescription>
             <div class="rx-alert-actions">
               <AlertDialogCancel as-child>
@@ -103,6 +155,8 @@ function clearAllData() {
         </AlertDialogPortal>
       </AlertDialogRoot>
     </div>
+
+    <AddClassModal v-model:visible="showAddClass" />
   </div>
 </template>
 
@@ -118,12 +172,54 @@ function clearAllData() {
 .page-title { font-size: 1.5rem; font-weight: 700; }
 .card-heading { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
 
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
 .theme-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
+
+.tag-list { display: flex; flex-direction: column; gap: 0.375rem; }
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.tag-remove:hover { color: #dc2626; }
+
+.add-tag-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-tag-row .rx-input { flex: 1; }
+
+.rx-btn--sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
 
 .danger-card { border-color: #dc2626; }
 .danger-heading { color: #dc2626; }

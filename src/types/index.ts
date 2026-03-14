@@ -1,9 +1,5 @@
-export interface ClassSession {
-  id: string
-  name: string
-  timeStart: string
-  timeEnd: string
+export interface DayRecord {
   date: string
-  remarks: string
-  createdAt: number
+  classes: string[]
+  tags: string[]
 }

@@ -295,47 +295,50 @@ button { font-family: inherit; }
   padding-top: 1.125rem;
 }
 
-/* ── Saved confirmation screen ── */
-.saved-confirmation {
-  display: flex;
-  flex-direction: column;
+/* ── Chip / toggle buttons ── */
+.rx-chip {
+  display: inline-flex;
   align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  padding: 2rem 1.5rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.saved-check {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+.rx-chip:hover {
+  border-color: var(--color-text-muted);
+}
+
+.rx-chip--active {
   background: var(--color-accent);
   color: var(--color-accent-text);
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
+  border-color: var(--color-accent);
+  font-weight: 600;
 }
 
-.saved-name {
-  font-size: 1.25rem;
-  font-weight: 700;
+.rx-chip--active:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
-.saved-meta {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  margin-bottom: 1rem;
+.rx-chip--tag {
+  border-style: dashed;
 }
 
-.saved-gcal-btn {
-  text-decoration: none;
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 0.9375rem;
-  border-radius: var(--radius-lg);
+.rx-chip--tag.rx-chip--active {
+  border-style: solid;
+}
+
+.rx-chip--readonly {
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ── Google Calendar link on cards ── */
@@ -427,171 +430,6 @@ button { font-family: inherit; }
 
 .picker-chevron--open {
   transform: rotate(180deg);
-}
-
-/* ── Time list dropdown ── */
-.time-list {
-  max-height: 160px;
-  overflow-y: auto;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  margin-top: 0.25rem;
-}
-
-.time-option {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.875rem;
-  background: none;
-  border: none;
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-
-.time-option:hover {
-  background: var(--color-surface-hover);
-}
-
-/* ── Radial Clock Picker ── */
-.clock-picker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-  animation: rx-fade-in 0.15s ease;
-}
-
-.clock-display {
-  display: flex;
-  align-items: baseline;
-  gap: 0.125rem;
-}
-
-.clock-digit {
-  background: none;
-  border: 2px solid transparent;
-  border-radius: var(--radius);
-  color: var(--color-text-muted);
-  font-size: 2rem;
-  font-weight: 700;
-  font-family: inherit;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-  transition: all 0.15s ease;
-  line-height: 1;
-}
-
-.clock-digit--active {
-  color: var(--color-text);
-  background: var(--color-surface-hover);
-  border-color: var(--color-border);
-}
-
-.clock-colon {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  line-height: 1;
-}
-
-.clock-period {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-family: inherit;
-  padding: 0.25rem 0.5rem;
-  margin-left: 0.5rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.clock-period:hover {
-  background: var(--color-surface-hover);
-}
-
-.clock-face-wrap {
-  width: 220px;
-  height: 220px;
-}
-
-.clock-face {
-  width: 100%;
-  height: 100%;
-}
-
-.clock-bg {
-  fill: var(--color-surface);
-  stroke: var(--color-border);
-  stroke-width: 1;
-}
-
-.clock-hand {
-  stroke: var(--color-accent);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-.clock-center {
-  fill: var(--color-accent);
-}
-
-.clock-hand-tip {
-  fill: var(--color-accent);
-  opacity: 0.15;
-}
-
-.clock-num-group {
-  cursor: pointer;
-}
-
-.clock-num-bg {
-  fill: transparent;
-  transition: fill 0.1s ease;
-}
-
-.clock-num-bg--active {
-  fill: var(--color-accent);
-}
-
-.clock-num {
-  fill: var(--color-text);
-  font-size: 13px;
-  font-weight: 500;
-  user-select: none;
-  transition: fill 0.1s ease;
-}
-
-.clock-num--active {
-  fill: var(--color-accent-text);
-  font-weight: 700;
-}
-
-.clock-num-group:hover .clock-num-bg:not(.clock-num-bg--active) {
-  fill: var(--color-surface-hover);
-}
-
-.clock-hint {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.time-option--active {
-  font-weight: 700;
-  background: var(--color-surface);
 }
 
 /* ── Radix Calendar ── */
