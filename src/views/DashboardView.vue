@@ -1,65 +1,120 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Separator } from 'radix-vue'
 import { useClassesStore } from '@/stores/classes'
+import { useThemeStore } from '@/stores/theme'
+import { Chart } from 'highcharts-vue'
+import Highcharts from 'highcharts'
 
 const store = useClassesStore()
+const themeStore = useThemeStore()
 
 const COLORS = [
-  '#2563eb',
-  '#dc2626',
-  '#16a34a',
-  '#d97706',
-  '#7c3aed',
-  '#0891b2',
-  '#db2777',
-  '#65a30d',
-  '#9333ea',
-  '#ea580c',
+  '#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed',
+  '#0891b2', '#db2777', '#65a30d', '#9333ea', '#ea580c',
 ]
+
+const isDark = computed(() => themeStore.theme === 'dark')
+const chartKey = ref(0)
+watch(isDark, () => { chartKey.value++ })
+
+function baseTheme() {
+  return {
+    backgroundColor: 'transparent',
+    style: { fontFamily: 'Inter, -apple-system, sans-serif' },
+    plotBorderWidth: 0,
+  }
+}
+
+function axisStyle() {
+  const c = isDark.value ? '#333' : '#e0e0e0'
+  const t = isDark.value ? '#aaa' : '#666'
+  return {
+    gridLineColor: c,
+    lineColor: c,
+    tickColor: c,
+    labels: { style: { color: t, fontSize: '10px' } },
+    title: { style: { color: t } },
+  }
+}
+
+function legendStyle() {
+  const c = isDark.value ? '#ccc' : '#333'
+  return {
+    itemStyle: { color: c, fontSize: '11px', fontWeight: '500' },
+    itemHoverStyle: { color: isDark.value ? '#fff' : '#000' },
+  }
+}
 
 const weekly = computed(() => store.getWeeklyPerSubject())
 const monthly = computed(() => store.getMonthlyPerSubject())
 
-function buildPoints(values: number[], maxVal: number, width: number, height: number, padding: number): string {
-  if (values.length === 0) return ''
-  const stepX = values.length > 1 ? (width - padding * 2) / (values.length - 1) : 0
-  return values
-    .map((v, i) => {
-      const x = padding + i * stepX
-      const y = maxVal > 0 ? height - padding - (v / maxVal) * (height - padding * 2) : height - padding
-      return `${x},${y}`
-    })
-    .join(' ')
+function buildSeries(chartData: { subjects: string[]; data: Record<string, number[]> }) {
+  return chartData.subjects.map((name, i) => ({
+    name,
+    data: chartData.data[name],
+    color: COLORS[i % COLORS.length],
+    marker: { radius: 4, symbol: 'circle' },
+  }))
 }
 
-function chartMax(data: Record<string, number[]>): number {
-  let m = 0
-  for (const vals of Object.values(data)) {
-    for (const v of vals) { if (v > m) m = v }
-  }
-  return Math.max(m, 1)
-}
+const weeklyOptions = computed(() => ({
+  chart: { ...baseTheme(), type: 'spline', height: 260 },
+  title: { text: undefined },
+  colors: COLORS,
+  xAxis: { categories: weekly.value.labels, ...axisStyle(), crosshair: true },
+  yAxis: { ...axisStyle(), title: { text: 'Classes' }, allowDecimals: false, min: 0 },
+  series: buildSeries(weekly.value),
+  legend: { ...legendStyle(), enabled: weekly.value.subjects.length > 1 },
+  tooltip: { shared: true, borderRadius: 8, borderWidth: 0, shadow: true, style: { fontSize: '12px' } },
+  plotOptions: { spline: { lineWidth: 2.5, marker: { enabled: true } } },
+  credits: { enabled: false },
+}))
 
-function color(i: number): string {
-  return COLORS[i % COLORS.length]
-}
+const monthlyOptions = computed(() => ({
+  chart: { ...baseTheme(), type: 'spline', height: 280 },
+  title: { text: undefined },
+  colors: COLORS,
+  xAxis: {
+    categories: monthly.value.labels,
+    ...axisStyle(),
+    crosshair: true,
+    labels: {
+      ...axisStyle().labels,
+      step: monthly.value.labels.length > 15 ? 5 : 1,
+    },
+  },
+  yAxis: { ...axisStyle(), title: { text: 'Classes' }, allowDecimals: false, min: 0 },
+  series: buildSeries(monthly.value),
+  legend: { ...legendStyle(), enabled: monthly.value.subjects.length > 1 },
+  tooltip: { shared: true, borderRadius: 8, borderWidth: 0, shadow: true, style: { fontSize: '12px' } },
+  plotOptions: { spline: { lineWidth: 2, marker: { enabled: monthly.value.labels.length <= 15, radius: 3 } } },
+  credits: { enabled: false },
+}))
 
 const weeklyBreakdown = computed(() => {
   const w = weekly.value
   return w.subjects
     .map((name, si) => ({
       name,
-      count: w.data[name].reduce((a, b) => a + b, 0),
-      color: color(si),
+      count: w.data[name].reduce((a: number, b: number) => a + b, 0),
+      color: COLORS[si % COLORS.length],
     }))
     .sort((a, b) => b.count - a.count)
 })
 
+const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.count, 0))
+
+const allSubjects = computed(() => store.getAllSubjectsEver())
+
+function subjectColor(name: string): string {
+  const idx = allSubjects.value.indexOf(name)
+  return COLORS[(idx >= 0 ? idx : 0) % COLORS.length]
+}
+
 const allTimeBreakdown = computed(() => {
-  const subjects = store.getAllSubjectsEver()
-  return subjects
-    .map((name) => ({ name, count: store.getClassCountTotal(name) }))
+  return allSubjects.value
+    .map((name) => ({ name, count: store.getClassCountTotal(name), color: subjectColor(name) }))
     .sort((a, b) => b.count - a.count)
 })
 
@@ -83,8 +138,6 @@ const monthStats = computed(() => {
   }
   return { classes, days }
 })
-
-const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.count, 0))
 </script>
 
 <template>
@@ -111,52 +164,11 @@ const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.
       </div>
     </div>
 
-    <!-- Weekly line chart -->
+    <!-- Weekly Highchart -->
     <div class="rx-card chart-card">
       <h2 class="card-heading">Weekly</h2>
       <div v-if="weekly.subjects.length === 0" class="dash-empty">No data yet for the past 7 days.</div>
-      <template v-else>
-        <div class="chart-wrap">
-          <svg viewBox="0 0 300 140" class="line-chart">
-            <line x1="30" y1="10" x2="30" y2="110" class="chart-axis" />
-            <line x1="30" y1="110" x2="290" y2="110" class="chart-axis" />
-            <text
-              v-for="(lbl, i) in weekly.labels"
-              :key="'wl-' + i"
-              :x="30 + i * ((300 - 60) / Math.max(weekly.labels.length - 1, 1))"
-              y="128"
-              text-anchor="middle"
-              class="chart-label"
-            >{{ lbl }}</text>
-            <polyline
-              v-for="(subj, si) in weekly.subjects"
-              :key="'ws-' + subj"
-              :points="buildPoints(weekly.data[subj], chartMax(weekly.data), 300, 120, 30)"
-              fill="none"
-              :stroke="color(si)"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <template v-for="(subj, si) in weekly.subjects" :key="'wd-' + subj">
-              <circle
-                v-for="(val, di) in weekly.data[subj]"
-                :key="'wdot-' + subj + di"
-                :cx="30 + di * ((300 - 60) / Math.max(weekly.labels.length - 1, 1))"
-                :cy="chartMax(weekly.data) > 0 ? 120 - 30 - (val / chartMax(weekly.data)) * (120 - 60) : 90"
-                :r="val > 0 ? 3 : 0"
-                :fill="color(si)"
-              />
-            </template>
-          </svg>
-        </div>
-        <div class="chart-legend">
-          <span v-for="(subj, si) in weekly.subjects" :key="'wleg-' + subj" class="legend-item">
-            <span class="legend-dot" :style="{ background: color(si) }"></span>
-            {{ subj }}
-          </span>
-        </div>
-      </template>
+      <Chart v-else :key="'w-' + chartKey" :options="weeklyOptions" />
     </div>
 
     <!-- Weekly breakdown -->
@@ -176,41 +188,12 @@ const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.
       </div>
     </div>
 
-    <!-- Monthly line chart -->
+    <!-- Monthly Highchart -->
     <div class="rx-card chart-card">
       <h2 class="card-heading">{{ monthLabel }}</h2>
       <div v-if="monthly.subjects.length === 0" class="dash-empty">No data yet this month.</div>
       <template v-else>
-        <div class="chart-wrap">
-          <svg :viewBox="`0 0 ${Math.max(monthly.labels.length * 16 + 60, 300)} 140`" class="line-chart line-chart--wide">
-            <line x1="30" y1="10" x2="30" y2="110" class="chart-axis" />
-            <line x1="30" y1="110" :x2="Math.max(monthly.labels.length * 16 + 30, 270)" y2="110" class="chart-axis" />
-            <text
-              v-for="(lbl, i) in monthly.labels"
-              :key="'ml-' + i"
-              :x="30 + i * (Math.max(monthly.labels.length * 16 - 30, 240) / Math.max(monthly.labels.length - 1, 1))"
-              y="128"
-              text-anchor="middle"
-              class="chart-label"
-            >{{ Number(lbl) % 5 === 1 || monthly.labels.length <= 10 ? lbl : '' }}</text>
-            <polyline
-              v-for="(subj, si) in monthly.subjects"
-              :key="'ms-' + subj"
-              :points="buildPoints(monthly.data[subj], chartMax(monthly.data), Math.max(monthly.labels.length * 16 + 30, 300), 120, 30)"
-              fill="none"
-              :stroke="color(si)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-        <div class="chart-legend">
-          <span v-for="(subj, si) in monthly.subjects" :key="'mleg-' + subj" class="legend-item">
-            <span class="legend-dot" :style="{ background: color(si) }"></span>
-            {{ subj }}
-          </span>
-        </div>
+        <Chart :key="'m-' + chartKey" :options="monthlyOptions" />
         <p class="month-summary">
           <strong>{{ monthStats.classes }}</strong> classes across <strong>{{ monthStats.days }}</strong> days this month.
         </p>
@@ -225,9 +208,12 @@ const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">No attendance data yet.</p>
       <div v-else class="breakdown-list">
         <div v-for="item in allTimeBreakdown" :key="item.name" class="breakdown-row">
-          <span class="breakdown-name">{{ item.name }}</span>
+          <span class="breakdown-name">
+            <span class="legend-dot" :style="{ background: item.color }"></span>
+            {{ item.name }}
+          </span>
           <div class="breakdown-bar-wrap">
-            <div class="breakdown-bar" :style="{ width: store.totalClassesAttended > 0 ? (item.count / store.totalClassesAttended * 100) + '%' : '0%' }" />
+            <div class="breakdown-bar" :style="{ width: store.totalClassesAttended > 0 ? (item.count / store.totalClassesAttended * 100) + '%' : '0%', background: item.color }" />
           </div>
           <span class="breakdown-count">{{ item.count }}</span>
         </div>
@@ -250,23 +236,8 @@ const weeklyTotal = computed(() => weeklyBreakdown.value.reduce((s, b) => s + b.
 .card-heading { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
 
 .chart-card { padding: 1.25rem; }
-.chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-.line-chart { width: 100%; max-width: 300px; margin: 0 auto; display: block; height: auto; }
-.line-chart--wide { max-width: none; min-width: 300px; }
-
-.chart-axis { stroke: var(--color-border); stroke-width: 1; }
-.chart-label { fill: var(--color-text-muted); font-size: 8px; font-weight: 500; }
-
-.chart-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
-.legend-item { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 500; color: var(--color-text); }
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 .month-summary { font-size: 0.875rem; color: var(--color-text-muted); line-height: 1.6; margin-top: 0.75rem; }
 .month-summary strong { color: var(--color-text); }

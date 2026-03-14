@@ -11,6 +11,12 @@ importers:
       '@internationalized/date':
         specifier: ^3.12.0
         version: 3.12.0
+      highcharts:
+        specifier: ^12.5.0
+        version: 12.5.0
+      highcharts-vue:
+        specifier: ^2.0.1
+        version: 2.0.1(highcharts@12.5.0)(vue@3.5.30(typescript@5.7.3))
       pinia:
         specifier: ^2.3.0
         version: 2.3.1(typescript@5.7.3)(vue@3.5.30(typescript@5.7.3))
@@ -1493,6 +1499,23 @@ packages:
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
+
+  highcharts-vue@2.0.1:
+    resolution: {integrity: sha512-7yVaKvsWlx7OgmKFXE2D99fi/0tr2A85H4KUz3jL7CRQhAwvEvXgtDIyTBGLHJsOC5L9VlppAI7k6KfIi0j0hg==}
+    peerDependencies:
+      highcharts: '>=5.0.0'
+      vue: '>=3.0.0'
+
+  highcharts@12.5.0:
+    resolution: {integrity: sha512-uNSSv1KqRLNvkyXlf1FbeGWB1mJ/8/IYpVeqYiTIop5Wo8peUvNyzUfLa58vILsmXyz+XrETtgKIEOcSgBBKuQ==}
+    peerDependencies:
+      jspdf: ^3.0.0
+      svg2pdf.js: ^2.6.0
+    peerDependenciesMeta:
+      jspdf:
+        optional: true
+      svg2pdf.js:
+        optional: true
 
   ico-endec@0.1.6:
     resolution: {integrity: sha512-ZdLU38ZoED3g1j3iEyzcQj+wAkY2xfWNkymszfJPoxucIUhK7NayQ+/C4Kv0nDFMIsbtbEHldv3V8PU494/ueQ==}
@@ -3935,6 +3958,13 @@ snapshots:
       function-bind: 1.1.2
 
   he@1.2.0: {}
+
+  highcharts-vue@2.0.1(highcharts@12.5.0)(vue@3.5.30(typescript@5.7.3)):
+    dependencies:
+      highcharts: 12.5.0
+      vue: 3.5.30(typescript@5.7.3)
+
+  highcharts@12.5.0: {}
 
   ico-endec@0.1.6: {}
 
