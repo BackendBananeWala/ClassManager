@@ -4,11 +4,16 @@ import { storage } from '@/lib/storage'
 import { debouncedPush, pullData, mergeData } from '@/lib/sync'
 
 export const useSyncStore = defineStore('sync', () => {
-  const syncEnabled = ref<boolean>(storage.get<boolean>('sync_enabled') ?? false)
   const syncId = ref<string>(storage.get<string>('sync_id') ?? '')
+  const syncEnabled = ref<boolean>(storage.get<boolean>('sync_enabled') ?? false)
   const lastSynced = ref<string>(storage.get<string>('sync_last') ?? '')
   const syncing = ref(false)
   const error = ref('')
+
+  if (!syncId.value) {
+    syncId.value = crypto.randomUUID()
+    storage.set('sync_id', syncId.value)
+  }
 
   function persist() {
     storage.set('sync_enabled', syncEnabled.value)
@@ -17,9 +22,6 @@ export const useSyncStore = defineStore('sync', () => {
   }
 
   function enableSync() {
-    if (!syncId.value) {
-      syncId.value = crypto.randomUUID()
-    }
     syncEnabled.value = true
     persist()
     triggerPush()
