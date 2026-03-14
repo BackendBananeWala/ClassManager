@@ -9,7 +9,7 @@ const firebaseConfig = {
   messagingSenderId: '385618318246',
   appId: '1:385618318246:web:be239179475734cc783567',
   measurementId: 'G-1GXSYJ4W1E',
-  databaseURL: 'https://classattendancemanager-c937d-default-rtdb.firebaseio.com',
+  databaseURL: 'https://classattendancemanager-c937d-default-rtdb.asia-southeast1.firebasedatabase.app',
 }
 
 const app = initializeApp(firebaseConfig)
