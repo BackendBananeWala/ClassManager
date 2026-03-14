@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import {
   CalendarRoot,
   CalendarCell,
@@ -30,6 +30,7 @@ const greeting = computed(() => {
   return 'Good evening'
 })
 
+// --- Today section (fixed to actual today) ---
 const dateToday = store.todayStr()
 
 function isClassActive(name: string): boolean {
@@ -55,28 +56,42 @@ const syncUrl = computed(() => {
 
 const hasTodayData = computed(() => store.todayClassCount > 0 || (store.todayRecord?.tags.includes('Holiday') ?? false))
 
-// --- History (fully separate from today) ---
+// --- Today's summary section ---
+const todaySummary = computed(() => {
+  const rec = store.todayRecord
+  if (!rec) return null
+  if (rec.classes.length === 0 && rec.tags.length === 0) return null
+  return rec
+})
+
+// --- History (separate, defaults to today) ---
 const historyOpen = ref(false)
-const historyDate = ref<DateValue | undefined>(undefined)
-const historyDateStr = ref('')
-const historyDisplayDate = ref('Select a date')
+const historyCalDate = ref<DateValue>(today(getLocalTimeZone()) as DateValue)
 
-function onHistoryDateSelect(d: DateValue | undefined) {
-  if (!d) return
-  historyDate.value = d
-  historyDateStr.value = `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+const historyDateStr = computed(() => {
+  const d = historyCalDate.value
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+})
+
+const historyDisplayDate = computed(() => {
+  const d = historyCalDate.value
   const jsDate = new Date(d.year, d.month - 1, d.day)
-  historyDisplayDate.value = jsDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  historyOpen.value = false
-}
+  return jsDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+})
 
-const historyRecord = computed(() => historyDateStr.value ? store.getDay(historyDateStr.value) : null)
+const historyRecord = computed(() => store.getDay(historyDateStr.value))
 
 const historySyncUrl = computed(() => {
   const rec = historyRecord.value
   if (!rec) return ''
   return buildDaySyncUrl(rec.date, rec.classes, rec.tags)
 })
+
+function onHistoryDateSelect(d: DateValue | undefined) {
+  if (!d) return
+  historyCalDate.value = d
+  historyOpen.value = false
+}
 </script>
 
 <template>
@@ -134,6 +149,21 @@ const historySyncUrl = computed(() => {
       </section>
     </template>
 
+    <!-- Today's summary -->
+    <section v-if="todaySummary" class="summary-section">
+      <h2 class="section-heading">Today's Summary</h2>
+      <div class="rx-card summary-card">
+        <div v-if="todaySummary.classes.length > 0" class="summary-group">
+          <span class="summary-label">Classes</span>
+          <span class="summary-items">{{ todaySummary.classes.join(', ') }}</span>
+        </div>
+        <div v-if="todaySummary.tags.length > 0" class="summary-group">
+          <span class="summary-label">Events</span>
+          <span class="summary-items">{{ todaySummary.tags.join(', ') }}</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Sync to Google Calendar -->
     <a
       v-if="hasTodayData"
@@ -157,6 +187,7 @@ const historySyncUrl = computed(() => {
 
       <div v-if="historyOpen" class="cal-wrapper">
         <CalendarRoot
+          :default-value="historyCalDate"
           v-slot="{ weekDays, grid }"
           class="cal-root"
           weekday-format="short"
@@ -185,24 +216,22 @@ const historySyncUrl = computed(() => {
       </div>
 
       <!-- Selected date detail -->
-      <template v-if="historyDateStr">
-        <div v-if="historyRecord" class="history-detail">
-          <div v-if="historyRecord.classes.length > 0" class="history-group">
-            <span class="history-label">Classes</span>
-            <div class="chip-grid chip-grid--sm">
-              <span v-for="c in historyRecord.classes" :key="c" class="rx-chip rx-chip--active rx-chip--readonly">{{ c }}</span>
-            </div>
+      <div v-if="historyRecord" class="history-detail">
+        <div v-if="historyRecord.classes.length > 0" class="history-group">
+          <span class="history-label">Classes</span>
+          <div class="chip-grid chip-grid--sm">
+            <span v-for="c in historyRecord.classes" :key="c" class="rx-chip rx-chip--active rx-chip--readonly">{{ c }}</span>
           </div>
-          <div v-if="historyRecord.tags.length > 0" class="history-group">
-            <span class="history-label">Events</span>
-            <div class="chip-grid chip-grid--sm">
-              <span v-for="t in historyRecord.tags" :key="t" class="rx-chip rx-chip--tag rx-chip--active rx-chip--readonly">{{ t }}</span>
-            </div>
-          </div>
-          <a :href="historySyncUrl" target="_blank" rel="noopener" class="gcal-link">+ Google Calendar</a>
         </div>
-        <p v-else class="history-empty">No attendance recorded for this date.</p>
-      </template>
+        <div v-if="historyRecord.tags.length > 0" class="history-group">
+          <span class="history-label">Events</span>
+          <div class="chip-grid chip-grid--sm">
+            <span v-for="t in historyRecord.tags" :key="t" class="rx-chip rx-chip--tag rx-chip--active rx-chip--readonly">{{ t }}</span>
+          </div>
+        </div>
+        <a :href="historySyncUrl" target="_blank" rel="noopener" class="gcal-link">+ Google Calendar</a>
+      </div>
+      <p v-else-if="!historyOpen" class="history-empty">No attendance recorded for this date.</p>
     </section>
   </div>
 </template>
@@ -257,6 +286,36 @@ const historySyncUrl = computed(() => {
 .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
 .empty-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
 .empty-desc { font-size: 0.875rem; color: var(--color-text-muted); max-width: 280px; line-height: 1.6; }
+
+.summary-section { display: flex; flex-direction: column; }
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.summary-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.summary-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-items {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.5;
+}
 
 .sync-btn {
   display: block;
