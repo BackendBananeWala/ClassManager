@@ -52,12 +52,25 @@ function exportData() {
   const a = document.createElement('a')
   a.href = url
   a.download = 'classmanager-backup.json'
+  a.style.display = 'none'
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 100)
+}
+
+function triggerFileInput() {
+  if (fileInput.value) {
+    fileInput.value.value = ''
+    fileInput.value.click()
+  }
 }
 
 function onFileSelect(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
   pendingFile.value = file
   importError.value = ''
@@ -74,7 +87,13 @@ function confirmImport() {
     } catch {
       importError.value = 'Invalid backup file. Please select a valid export.'
       showImportConfirm.value = false
+      pendingFile.value = null
     }
+  }
+  reader.onerror = () => {
+    importError.value = 'Could not read the file. Please try again.'
+    showImportConfirm.value = false
+    pendingFile.value = null
   }
   reader.readAsText(pendingFile.value)
 }
@@ -177,8 +196,8 @@ function clearAllData() {
       <p class="info-text">Export your data as a JSON backup or import from a previous export.</p>
       <div class="data-actions">
         <button class="rx-btn rx-btn-primary rx-btn--sm" @click="exportData">Export Data</button>
-        <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="fileInput?.click()">Import Data</button>
-        <input ref="fileInput" type="file" accept=".json" style="display:none" @change="onFileSelect" />
+        <button class="rx-btn rx-btn-ghost rx-btn--sm" @click="triggerFileInput">Import Data</button>
+        <input ref="fileInput" type="file" accept="application/json,.json,text/plain" style="display:none" @change="onFileSelect" />
       </div>
       <p v-if="importError" class="rx-field-error" style="margin-top:0.5rem">{{ importError }}</p>
 
