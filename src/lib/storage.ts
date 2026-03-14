@@ -1,4 +1,5 @@
 const STORAGE_PREFIX = 'classmanager_'
+const KNOWN_KEYS = ['user_name', 'theme', 'day_records', 'class_names', 'quick_tags']
 
 export const storage = {
   get<T>(key: string): T | null {
@@ -28,15 +29,9 @@ export const storage = {
       version: 1,
       exportedAt: new Date().toISOString(),
     }
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(STORAGE_PREFIX)) {
-        const shortKey = key.slice(STORAGE_PREFIX.length)
-        try {
-          data[shortKey] = JSON.parse(localStorage.getItem(key)!)
-        } catch {
-          data[shortKey] = localStorage.getItem(key)
-        }
-      }
+    for (const key of KNOWN_KEYS) {
+      const val = storage.get(key)
+      if (val !== null) data[key] = val
     }
     return JSON.stringify(data, null, 2)
   },
@@ -46,10 +41,11 @@ export const storage = {
     if (!data || data.version !== 1) {
       throw new Error('Invalid backup file')
     }
+    storage.clear()
     const reserved = ['version', 'exportedAt']
     for (const [key, value] of Object.entries(data)) {
       if (reserved.includes(key)) continue
-      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value))
+      storage.set(key, value)
     }
   },
 }
