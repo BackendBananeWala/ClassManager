@@ -30,23 +30,14 @@ const greeting = computed(() => {
   return 'Good evening'
 })
 
-// --- Today section (fixed to actual today) ---
 const dateToday = store.todayStr()
 
-function isClassActive(name: string): boolean {
-  return store.todayRecord?.classes.includes(name) ?? false
+function classCount(date: string, name: string): number {
+  return store.getClassCount(date, name)
 }
 
-function isTagActive(tag: string): boolean {
-  return store.todayRecord?.tags.includes(tag) ?? false
-}
-
-function onToggleClass(name: string) {
-  store.toggleClass(dateToday, name)
-}
-
-function onToggleTag(tag: string) {
-  store.toggleTag(dateToday, tag)
+function isTagActive(date: string, tag: string): boolean {
+  return store.getDay(date)?.tags.includes(tag) ?? false
 }
 
 const syncUrl = computed(() => {
@@ -56,15 +47,19 @@ const syncUrl = computed(() => {
 
 const hasTodayData = computed(() => store.todayClassCount > 0 || (store.todayRecord?.tags.includes('Holiday') ?? false))
 
-// --- Today's summary section ---
 const todaySummary = computed(() => {
   const rec = store.todayRecord
   if (!rec) return null
   if (rec.classes.length === 0 && rec.tags.length === 0) return null
-  return rec
+  const unique = [...new Set(rec.classes)]
+  const items = unique.map((n) => {
+    const c = rec.classes.filter((x) => x === n).length
+    return c > 1 ? `${n} x${c}` : n
+  })
+  return { classItems: items, tags: rec.tags }
 })
 
-// --- History (separate, defaults to today) ---
+// --- History ---
 const historyOpen = ref(false)
 const historyCalDate = ref<DateValue>(today(getLocalTimeZone()) as DateValue)
 
@@ -85,6 +80,11 @@ const historySyncUrl = computed(() => {
   const rec = historyRecord.value
   if (!rec) return ''
   return buildDaySyncUrl(rec.date, rec.classes, rec.tags)
+})
+
+const historyHasData = computed(() => {
+  const rec = historyRecord.value
+  return rec && (rec.classes.length > 0 || rec.tags.length > 0)
 })
 
 function onHistoryDateSelect(d: DateValue | undefined) {
@@ -119,16 +119,23 @@ function onHistoryDateSelect(d: DateValue | undefined) {
       <section v-if="store.savedNames.length > 0">
         <h2 class="section-heading">Classes</h2>
         <div class="chip-grid">
-          <button
+          <span
             v-for="name in store.savedNames"
             :key="'cls-' + name"
-            type="button"
-            class="rx-chip"
-            :class="{ 'rx-chip--active': isClassActive(name) }"
-            @click="onToggleClass(name)"
+            class="rx-chip-counter"
+            :class="{ 'rx-chip-counter--active': classCount(dateToday, name) > 0 }"
           >
-            {{ name }}
-          </button>
+            <button type="button" class="rx-chip-counter-body" @click="store.incrementClass(dateToday, name)">
+              {{ name }}
+              <span v-if="classCount(dateToday, name) > 0" class="rx-chip-badge">{{ classCount(dateToday, name) }}</span>
+            </button>
+            <button
+              v-if="classCount(dateToday, name) > 0"
+              type="button"
+              class="rx-chip-clear"
+              @click="store.clearClass(dateToday, name)"
+            >&times;</button>
+          </span>
         </div>
       </section>
 
@@ -140,8 +147,8 @@ function onHistoryDateSelect(d: DateValue | undefined) {
             :key="'tag-' + tag"
             type="button"
             class="rx-chip rx-chip--tag"
-            :class="{ 'rx-chip--active': isTagActive(tag) }"
-            @click="onToggleTag(tag)"
+            :class="{ 'rx-chip--active': isTagActive(dateToday, tag) }"
+            @click="store.toggleTag(dateToday, tag)"
           >
             {{ tag }}
           </button>
@@ -153,9 +160,9 @@ function onHistoryDateSelect(d: DateValue | undefined) {
     <section v-if="todaySummary" class="summary-section">
       <h2 class="section-heading">Today's Summary</h2>
       <div class="rx-card summary-card">
-        <div v-if="todaySummary.classes.length > 0" class="summary-group">
+        <div v-if="todaySummary.classItems.length > 0" class="summary-group">
           <span class="summary-label">Classes</span>
-          <span class="summary-items">{{ todaySummary.classes.join(', ') }}</span>
+          <span class="summary-items">{{ todaySummary.classItems.join(', ') }}</span>
         </div>
         <div v-if="todaySummary.tags.length > 0" class="summary-group">
           <span class="summary-label">Events</span>
@@ -165,13 +172,7 @@ function onHistoryDateSelect(d: DateValue | undefined) {
     </section>
 
     <!-- Sync to Google Calendar -->
-    <a
-      v-if="hasTodayData"
-      :href="syncUrl"
-      target="_blank"
-      rel="noopener"
-      class="rx-btn rx-btn-primary sync-btn"
-    >
+    <a v-if="hasTodayData" :href="syncUrl" target="_blank" rel="noopener" class="rx-btn rx-btn-primary sync-btn">
       Sync Today to Google Calendar
     </a>
 
@@ -215,23 +216,53 @@ function onHistoryDateSelect(d: DateValue | undefined) {
         </CalendarRoot>
       </div>
 
-      <!-- Selected date detail -->
-      <div v-if="historyRecord" class="history-detail">
-        <div v-if="historyRecord.classes.length > 0" class="history-group">
-          <span class="history-label">Classes</span>
-          <div class="chip-grid chip-grid--sm">
-            <span v-for="c in historyRecord.classes" :key="c" class="rx-chip rx-chip--active rx-chip--readonly">{{ c }}</span>
+      <!-- Editable history for selected date -->
+      <template v-if="!historyOpen">
+        <div class="history-edit">
+          <h3 class="history-edit-heading">Edit: {{ historyDisplayDate }}</h3>
+
+          <div v-if="store.savedNames.length > 0" class="history-edit-group">
+            <span class="history-label">Classes</span>
+            <div class="chip-grid">
+              <span
+                v-for="name in store.savedNames"
+                :key="'hcls-' + name"
+                class="rx-chip-counter"
+                :class="{ 'rx-chip-counter--active': classCount(historyDateStr, name) > 0 }"
+              >
+                <button type="button" class="rx-chip-counter-body" @click="store.incrementClass(historyDateStr, name)">
+                  {{ name }}
+                  <span v-if="classCount(historyDateStr, name) > 0" class="rx-chip-badge">{{ classCount(historyDateStr, name) }}</span>
+                </button>
+                <button
+                  v-if="classCount(historyDateStr, name) > 0"
+                  type="button"
+                  class="rx-chip-clear"
+                  @click="store.clearClass(historyDateStr, name)"
+                >&times;</button>
+              </span>
+            </div>
           </div>
-        </div>
-        <div v-if="historyRecord.tags.length > 0" class="history-group">
-          <span class="history-label">Events</span>
-          <div class="chip-grid chip-grid--sm">
-            <span v-for="t in historyRecord.tags" :key="t" class="rx-chip rx-chip--tag rx-chip--active rx-chip--readonly">{{ t }}</span>
+
+          <div v-if="store.quickTags.length > 0" class="history-edit-group">
+            <span class="history-label">Events</span>
+            <div class="chip-grid">
+              <button
+                v-for="tag in store.quickTags"
+                :key="'htag-' + tag"
+                type="button"
+                class="rx-chip rx-chip--tag"
+                :class="{ 'rx-chip--active': isTagActive(historyDateStr, tag) }"
+                @click="store.toggleTag(historyDateStr, tag)"
+              >
+                {{ tag }}
+              </button>
+            </div>
           </div>
+
+          <a v-if="historyHasData" :href="historySyncUrl" target="_blank" rel="noopener" class="gcal-link">+ Google Calendar</a>
         </div>
-        <a :href="historySyncUrl" target="_blank" rel="noopener" class="gcal-link">+ Google Calendar</a>
-      </div>
-      <p v-else-if="!historyOpen" class="history-empty">No attendance recorded for this date.</p>
+      </template>
     </section>
   </div>
 </template>
@@ -239,120 +270,38 @@ function onHistoryDateSelect(d: DateValue | undefined) {
 <style scoped>
 .home { display: flex; flex-direction: column; gap: 1.5rem; }
 
-.greeting-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.25rem 0;
-}
-
+.greeting-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 0.25rem 0; }
 .greeting-sub { font-size: 0.9375rem; color: var(--color-text-muted); margin-bottom: 0.125rem; }
 .greeting-name { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
 
-.stat-inline {
-  display: flex;
-  align-items: baseline;
-  gap: 0.375rem;
-  padding: 0.625rem 1rem;
-}
-
+.stat-inline { display: flex; align-items: baseline; gap: 0.375rem; padding: 0.625rem 1rem; }
 .stat-value { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 0.6875rem; color: var(--color-text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.section-heading {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.625rem;
-}
+.section-heading { font-size: 0.8125rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.625rem; }
 
 .chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chip-grid--sm { gap: 0.375rem; }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 3rem 1.5rem;
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-xl);
-}
-
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 3rem 1.5rem; background: var(--color-surface); border: 1px dashed var(--color-border); border-radius: var(--radius-xl); }
 .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
 .empty-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
 .empty-desc { font-size: 0.875rem; color: var(--color-text-muted); max-width: 280px; line-height: 1.6; }
 
 .summary-section { display: flex; flex-direction: column; }
+.summary-card { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
+.summary-group { display: flex; flex-direction: column; gap: 0.125rem; }
+.summary-label { font-size: 0.6875rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.summary-items { font-size: 0.875rem; font-weight: 500; color: var(--color-text); line-height: 1.5; }
 
-.summary-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-}
-
-.summary-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.summary-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.summary-items {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text);
-  line-height: 1.5;
-}
-
-.sync-btn {
-  display: block;
-  width: 100%;
-  text-align: center;
-  text-decoration: none;
-  padding: 0.875rem;
-  font-size: 0.9375rem;
-  border-radius: var(--radius-lg);
-}
+.sync-btn { display: block; width: 100%; text-align: center; text-decoration: none; padding: 0.875rem; font-size: 0.9375rem; border-radius: var(--radius-lg); }
 
 .history-section { display: flex; flex-direction: column; gap: 0.75rem; }
 
-.history-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.history-group { display: flex; flex-direction: column; gap: 0.375rem; }
+.history-edit { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+.history-edit-heading { font-size: 0.875rem; font-weight: 600; }
+.history-edit-group { display: flex; flex-direction: column; gap: 0.375rem; }
 .history-label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
-.history-empty { font-size: 0.8125rem; color: var(--color-text-muted); }
-
-.gcal-link {
-  display: inline-block;
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
+.gcal-link { display: inline-block; margin-top: 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-decoration: none; transition: color 0.15s ease; }
 .gcal-link:hover { color: var(--color-text); }
 </style>

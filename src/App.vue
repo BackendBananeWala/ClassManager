@@ -1,13 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { Separator } from 'radix-vue'
+import { ref, computed } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import {
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  Separator,
+} from 'radix-vue'
 import { useThemeStore } from '@/stores/theme'
 
 useThemeStore()
 
 const route = useRoute()
+const router = useRouter()
 const isFullscreen = computed(() => route.meta.fullscreen === true)
+const menuOpen = ref(false)
+
+const pageName = computed(() => {
+  switch (route.name) {
+    case 'home': return 'Home'
+    case 'dashboard': return 'Dashboard'
+    case 'settings': return 'Settings'
+    default: return ''
+  }
+})
+
+function navigate(path: string) {
+  router.push(path)
+  menuOpen.value = false
+}
 </script>
 
 <template>
@@ -19,10 +42,26 @@ const isFullscreen = computed(() => route.meta.fullscreen === true)
             <span class="logo-icon">📚</span>
             <span class="logo-text">Class Manager</span>
           </RouterLink>
-          <nav class="nav-links">
-            <RouterLink to="/" class="nav-link">Home</RouterLink>
-            <RouterLink to="/settings" class="nav-link">Settings</RouterLink>
-          </nav>
+
+          <DropdownMenuRoot v-model:open="menuOpen">
+            <DropdownMenuTrigger class="menu-trigger">
+              <span class="menu-page">{{ pageName }}</span>
+              <span class="menu-icon">&#9776;</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent class="rx-dropdown-content" :side-offset="8" align="end">
+                <DropdownMenuItem class="rx-dropdown-item" :class="{ 'rx-dropdown-item--active': route.name === 'home' }" @select="navigate('/')">
+                  Home
+                </DropdownMenuItem>
+                <DropdownMenuItem class="rx-dropdown-item" :class="{ 'rx-dropdown-item--active': route.name === 'dashboard' }" @select="navigate('/dashboard')">
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem class="rx-dropdown-item" :class="{ 'rx-dropdown-item--active': route.name === 'settings' }" @select="navigate('/settings')">
+                  Settings
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
         </div>
       </header>
     </template>
@@ -41,12 +80,7 @@ const isFullscreen = computed(() => route.meta.fullscreen === true)
 </template>
 
 <style scoped>
-.app-layout {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
+.app-layout { min-height: 100dvh; display: flex; flex-direction: column; }
 .app-layout--fullscreen { min-height: 0; }
 
 .app-header {
@@ -80,28 +114,24 @@ const isFullscreen = computed(() => route.meta.fullscreen === true)
 
 .logo-icon { font-size: 1.25rem; }
 
-.nav-links { display: flex; gap: 0.25rem; }
-
-.nav-link {
-  text-decoration: none;
-  color: var(--color-text-muted);
-  padding: 0.5rem 0.875rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  font-size: 0.875rem;
+.menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--color-text);
   transition: all 0.15s ease;
 }
 
-.nav-link:hover {
-  color: var(--color-text);
-  background: var(--color-surface-hover);
-}
+.menu-trigger:hover { border-color: var(--color-text-muted); }
 
-.nav-link.router-link-active {
-  color: var(--color-text);
-  background: var(--color-surface);
-  font-weight: 600;
-}
+.menu-page { font-size: 0.8125rem; font-weight: 600; }
+.menu-icon { font-size: 1rem; line-height: 1; }
 
 .app-main {
   flex: 1;

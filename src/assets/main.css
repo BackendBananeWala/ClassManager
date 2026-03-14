@@ -172,6 +172,46 @@ button { font-family: inherit; }
   color: white;
 }
 
+/* ── Radix Dropdown Menu (portal) ── */
+.rx-dropdown-content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.375rem;
+  min-width: 140px;
+  box-shadow: 0 12px 32px -8px var(--color-shadow);
+  animation: rx-scale-in 0.15s ease;
+  z-index: 200;
+}
+
+.rx-dropdown-content:focus { outline: none; }
+
+.rx-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: none;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  text-align: left;
+}
+
+.rx-dropdown-item:hover,
+.rx-dropdown-item[data-highlighted] {
+  background: var(--color-surface-hover);
+  outline: none;
+}
+
+.rx-dropdown-item--active {
+  font-weight: 700;
+}
+
 /* ── Separator ── */
 .rx-separator {
   background: var(--color-border);
@@ -339,6 +379,84 @@ button { font-family: inherit; }
 .rx-chip--readonly {
   cursor: default;
   pointer-events: none;
+}
+
+/* ── Counter chip (tap to +1, x to clear) ── */
+.rx-chip-counter {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1.5px solid var(--color-border);
+  border-radius: 9999px;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.rx-chip-counter--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.rx-chip-counter-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.rx-chip-counter--active .rx-chip-counter-body {
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
+.rx-chip-counter-body:hover {
+  background: var(--color-surface-hover);
+}
+
+.rx-chip-counter--active .rx-chip-counter-body:hover {
+  background: var(--color-accent-hover);
+}
+
+.rx-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-accent-text);
+  color: var(--color-accent);
+}
+
+.rx-chip-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(128, 128, 128, 0.2);
+  color: var(--color-accent-text);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  opacity: 0.7;
+}
+
+.rx-chip-clear:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.15);
 }
 
 /* ── Google Calendar link on cards ── */
