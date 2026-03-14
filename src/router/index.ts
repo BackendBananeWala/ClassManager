@@ -1,43 +1,43 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { createRouter, createWebHashHistory } from "vue-router";
+import { useUserStore } from "@/stores/user";
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/welcome',
-      name: 'welcome',
-      component: () => import('@/views/WelcomeView.vue'),
+      path: "/welcome",
+      name: "welcome",
+      component: () => import("@/views/WelcomeView.vue"),
       meta: { fullscreen: true },
     },
     {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      path: "/",
+      name: "home",
+      component: () => import("@/views/HomeView.vue"),
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/DashboardView.vue'),
+      path: "/dashboard",
+      name: "dashboard",
+      component: () => import("@/views/DashboardView.vue"),
     },
     {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('@/views/SettingsView.vue'),
+      path: "/settings",
+      name: "settings",
+      component: () => import("@/views/SettingsView.vue"),
     },
   ],
-})
+});
 
 router.beforeEach((to) => {
-  const user = useUserStore()
+  const user = useUserStore();
 
-  if (!user.isOnboarded && to.name !== 'welcome') {
-    return { name: 'welcome' }
+  if (!user.isOnboarded && to.name !== "welcome") {
+    return { name: "welcome" };
   }
 
-  if (user.isOnboarded && to.name === 'welcome') {
-    return { name: 'home' }
+  if (user.isOnboarded && to.name === "welcome") {
+    return { name: "home" };
   }
-})
+});
 
-export default router
+export default router;

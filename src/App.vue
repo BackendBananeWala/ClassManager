@@ -15,9 +15,13 @@ import { useSyncStore } from '@/stores/sync'
 
 useThemeStore()
 
-const classesStore = useClassesStore()
-const syncStore = useSyncStore()
-classesStore.onPersist(() => syncStore.triggerPush())
+try {
+  const classesStore = useClassesStore()
+  const syncStore = useSyncStore()
+  classesStore.onPersist(() => syncStore.triggerPush())
+} catch {
+  // sync init failed, app continues without sync
+}
 
 const route = useRoute()
 const router = useRouter()

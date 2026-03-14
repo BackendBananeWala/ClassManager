@@ -10,9 +10,15 @@ const DEFAULT_TAGS = ['Holiday', 'Seminar', 'Workshop']
 const NON_COUNTED_TAGS = ['Holiday']
 
 export const useClassesStore = defineStore('classes', () => {
-  const dayRecords = ref<DayRecord[]>(storage.get<DayRecord[]>(DAYS_KEY) ?? [])
-  const savedNames = ref<string[]>(storage.get<string[]>(NAMES_KEY) ?? [])
-  const quickTags = ref<string[]>(storage.get<string[]>(TAGS_KEY) ?? DEFAULT_TAGS)
+  function safeArray<T>(val: unknown, fallback: T[]): T[] {
+    if (Array.isArray(val)) return val
+    if (val && typeof val === 'object') return Object.values(val) as T[]
+    return fallback
+  }
+
+  const dayRecords = ref<DayRecord[]>(safeArray(storage.get(DAYS_KEY), []))
+  const savedNames = ref<string[]>(safeArray(storage.get(NAMES_KEY), []))
+  const quickTags = ref<string[]>(safeArray(storage.get(TAGS_KEY), DEFAULT_TAGS))
 
   let _onPersist: (() => void) | null = null
   function onPersist(cb: () => void) { _onPersist = cb }

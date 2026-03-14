@@ -11,7 +11,11 @@ export const useSyncStore = defineStore('sync', () => {
   const error = ref('')
 
   if (!syncId.value) {
-    syncId.value = crypto.randomUUID()
+    try {
+      syncId.value = crypto.randomUUID()
+    } catch {
+      syncId.value = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    }
     storage.set('sync_id', syncId.value)
   }
 
