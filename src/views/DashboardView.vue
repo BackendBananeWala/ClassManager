@@ -9,15 +9,6 @@ import Highcharts from "highcharts";
 const store = useClassesStore();
 const themeStore = useThemeStore();
 
-/*
- * Color palette
- */
-const colors = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
   "#0891b2",
   "#db2777",
   "#65a30d",
@@ -71,6 +62,8 @@ function legendStyle() {
     itemHoverStyle: { color: isDark.value ? "#fff" : "#000" },
   };
 }
+
+// Computed properties for weekly and monthly attendance data per subject
 
 const weekly = computed(() => store.getWeeklyPerSubject());
 const monthly = computed(() => store.getMonthlyPerSubject());
@@ -386,7 +379,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No attendance data yet.
+        No attendance data yet submitted
       </p>
       <div v-else class="breakdown-list">
         <div
