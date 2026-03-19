@@ -9,21 +9,6 @@ import Highcharts from "highcharts";
 const store = useClassesStore();
 const themeStore = useThemeStore();
 
-/*
- * Color palette
- */
-const colors = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#0891b2",
-  "#db2777",
-  "#65a30d",
-  "#9333ea",
-  "#ea580c",
-];
 
 const COLORS = [
   "#2563eb",
@@ -75,6 +60,11 @@ function legendStyle() {
 const weekly = computed(() => store.getWeeklyPerSubject());
 const monthly = computed(() => store.getMonthlyPerSubject());
 
+/**
+ * Builds the series data for the chart.
+ * @param chartData - The data containing subjects and their corresponding data points.
+ * @returns An array of series objects for the chart.
+ */
 function buildSeries(chartData: {
   subjects: string[];
   data: Record<string, number[]>;
@@ -386,7 +376,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No attendance data yet.
+        No Attendance.
       </p>
       <div v-else class="breakdown-list">
         <div
