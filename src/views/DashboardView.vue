@@ -9,19 +9,8 @@ import Highcharts from "highcharts";
 const store = useClassesStore();
 const themeStore = useThemeStore();
 
+import { COLORS } from '@/views/constants'
 
-const COLORS = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#0891b2",
-  "#db2777",
-  "#65a30d",
-  "#9333ea",
-  "#ea580c",
-];
 
 const isDark = computed(() => themeStore.theme === "dark");
 const chartKey = ref(0);
@@ -76,6 +65,8 @@ function buildSeries(chartData: {
     marker: { radius: 4, symbol: "circle" },
   }));
 }
+// Configuration options for the weekly chart generated using Highcharts
+// This includes settings for the chart type, title, colors, x and y axis, etc.
 
 const weeklyOptions = computed(() => ({
   chart: { ...baseTheme(), type: "spline", height: 260 },
@@ -185,6 +176,10 @@ const allTimeBreakdown = computed(() => {
     }))
     .sort((a, b) => b.count - a.count);
 });
+// Computes the options for the monthly pie chart
+// Uses Highcharts with a pie chart configuration
+// Summarizes attendance data as a pie chart with tooltips
+// It uses `monthly` computed property for subjects and their data
 
 const monthlyPieOptions = computed(() => {
   const m = monthly.value;
@@ -376,7 +371,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        No attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
