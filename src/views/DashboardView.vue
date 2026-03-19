@@ -77,6 +77,10 @@ function buildSeries(chartData: {
   }));
 }
 
+  /**
+   * weeklyOptions: Configures all the chart options for the weekly trends line chart.
+   * Uses the COLORS array for consistent color schemes across the chart lines.
+   */
 const weeklyOptions = computed(() => ({
   chart: { ...baseTheme(), type: "spline", height: 260 },
   title: { text: undefined },
@@ -376,7 +380,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        no attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
