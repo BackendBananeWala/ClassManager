@@ -77,6 +77,8 @@ function buildSeries(chartData: {
   }));
 }
 
+// This is the color palette used for different parts of the chart
+
 const weeklyOptions = computed(() => ({
   chart: { ...baseTheme(), type: "spline", height: 260 },
   title: { text: undefined },
@@ -185,6 +187,8 @@ const allTimeBreakdown = computed(() => {
     }))
     .sort((a, b) => b.count - a.count);
 });
+
+// Computes the breakdown of weekly attendance data by subject
 
 const monthlyPieOptions = computed(() => {
   const m = monthly.value;
@@ -376,7 +380,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        No attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
