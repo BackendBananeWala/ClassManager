@@ -77,6 +77,7 @@ function buildSeries(chartData: {
   }));
 }
 
+// Computed property for configuring the weekly chart options including themes and data bindings
 const weeklyOptions = computed(() => ({
   chart: { ...baseTheme(), type: "spline", height: 260 },
   title: { text: undefined },
@@ -376,7 +377,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        no attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
