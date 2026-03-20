@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { COLORS } from './constants'
 import { Separator } from "radix-vue";
 import { useClassesStore } from "@/stores/classes";
 import { useThemeStore } from "@/stores/theme";
@@ -10,18 +11,6 @@ const store = useClassesStore();
 const themeStore = useThemeStore();
 
 
-const COLORS = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#0891b2",
-  "#db2777",
-  "#65a30d",
-  "#9333ea",
-  "#ea580c",
-];
 
 const isDark = computed(() => themeStore.theme === "dark");
 const chartKey = ref(0);
@@ -138,6 +127,7 @@ const monthlyOptions = computed(() => ({
   credits: { enabled: false },
 }));
 
+// This computed property processes breakdown of weekly data, accumulating class counts per subject.
 const weeklyBreakdown = computed(() => {
   const w = weekly.value;
   return w.subjects
@@ -176,6 +166,7 @@ function subjectColor(name: string): string {
   return COLORS[(idx >= 0 ? idx : 0) % COLORS.length];
 }
 
+// This computed property accumulates all subjects and calculates their total class counts with corresponding colors.
 const allTimeBreakdown = computed(() => {
   return allSubjects.value
     .map((name) => ({
@@ -184,6 +175,7 @@ const allTimeBreakdown = computed(() => {
       color: subjectColor(name),
     }))
     .sort((a, b) => b.count - a.count);
+// This computed property prepares data for rendering a pie chart based on monthly attendance breakdown.
 });
 
 const monthlyPieOptions = computed(() => {
@@ -376,7 +368,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        No attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
