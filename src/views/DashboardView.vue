@@ -5,25 +5,15 @@ import { useClassesStore } from "@/stores/classes";
 import { useThemeStore } from "@/stores/theme";
 import { Chart } from "highcharts-vue";
 import Highcharts from "highcharts";
+import { COLORS } from "./constants";
 
 const store = useClassesStore();
 const themeStore = useThemeStore();
 
 
-const COLORS = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#0891b2",
-  "#db2777",
-  "#65a30d",
-  "#9333ea",
-  "#ea580c",
-];
-
+// Whether the current theme is dark; used to toggle chart styling
 const isDark = computed(() => themeStore.theme === "dark");
+// Force Highcharts to fully re-render when theme flips by bumping a reactive key
 const chartKey = ref(0);
 watch(isDark, () => {
   chartKey.value++;
@@ -37,6 +27,7 @@ function baseTheme() {
   };
 }
 
+// Shared x/y axis styling that adapts to the current theme
 function axisStyle() {
   const c = isDark.value ? "#333" : "#e0e0e0";
   const t = isDark.value ? "#aaa" : "#666";
@@ -49,6 +40,7 @@ function axisStyle() {
   };
 }
 
+// Legend typography and hover styles based on theme
 function legendStyle() {
   const c = isDark.value ? "#ccc" : "#333";
   return {
@@ -57,6 +49,7 @@ function legendStyle() {
   };
 }
 
+// Aggregated attendance per subject for the past 7 days and the current month
 const weekly = computed(() => store.getWeeklyPerSubject());
 const monthly = computed(() => store.getMonthlyPerSubject());
 
@@ -186,6 +179,13 @@ const allTimeBreakdown = computed(() => {
     .sort((a, b) => b.count - a.count);
 });
 
+/**
+ * Highcharts pie configuration for the current month's subject distribution.
+ * - Builds pieData by summing each subject's monthly counts
+ * - Filters out zero-value slices to keep the chart clean
+ * - Sorts descending so the largest slices are rendered first
+ * - Applies theme-aware label styling
+ */
 const monthlyPieOptions = computed(() => {
   const m = monthly.value;
   const pieData = m.subjects
@@ -376,7 +376,7 @@ const monthStats = computed(() => {
     <div class="rx-card">
       <h2 class="card-heading">All-Time Breakdown</h2>
       <p v-if="allTimeBreakdown.length === 0" class="dash-empty">
-        No Attendance.
+        No attendance marked.
       </p>
       <div v-else class="breakdown-list">
         <div
